@@ -104,3 +104,47 @@ SET OwnerAddCitySplit = PARSENAME(REPLACE(OwnerAddress, ',','.') , 2)
 
 UPDATE NashHousing
 SET OwnerAddStateSplit = PARSENAME(REPLACE(OwnerAddress, ',','.') , 1)
+
+-- Change Y and N to Yes and No in "Sold as Vacant" Field
+
+SELECT DISTINCT(SoldAsVacant)
+FROM NashHousing
+
+SELECT SoldAsVacant
+		, CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+			   WHEN SoldAsVacant = 'N' THEN 'No'
+			   ELSE SoldAsVacant END AS new_col
+FROM NashHousing
+
+UPDATE NashHousing
+SET SoldAsVacant = CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+			   WHEN SoldAsVacant = 'N' THEN 'No'
+			   ELSE SoldAsVacant END
+
+
+-- Remove Duplicates
+WITH RowNumCTE AS (
+SELECT *
+	, ROW_NUMBER() OVER (
+			PARTITION BY ParcelID,
+						 PropertyAddress,
+						 SalePrice,
+						 SaleDate,
+						 LegalReference
+						 ORDER BY UniqueID) row_num
+FROM NashHousing
+)
+
+DELETE
+FROM RowNumCTE
+WHERE row_num > 1
+--ORDER BY PropertyAddress
+
+
+-- Delete unused columns, Columns we've already split
+
+ALTER TABLE NashHousing
+DROP COLUMN OwnerAddress, TaxDistrict, PropertyAddress
+
+ALTER TABLE NashHousing
+DROP COLUMN SaleDate
